@@ -45,6 +45,7 @@
   DEFINE BOOTSPLASH_IMAGE             = FALSE
   DEFINE NVME_ENABLE                  = TRUE
   DEFINE CAPSULE_SUPPORT              = FALSE
+  DEFINE FOLLOW_BGRT_SPEC             = FALSE
 
   #
   # NULL:    NullMemoryTestDxe
@@ -462,6 +463,8 @@
   gEfiMdeModulePkgTokenSpaceGuid.PcdPrioritizeInternal|$(PRIORITISE_INTERNAL)
 
   gUefiPayloadPkgTokenSpaceGuid.PcdBootManagerEscape|$(BOOT_MANAGER_ESCAPE)
+
+  gEfiMdeModulePkgTokenSpaceGuid.PcdFollowBGRTSpecification|$(FOLLOW_BGRT_SPEC)
 
   gEfiMdePkgTokenSpaceGuid.PcdMaximumUnicodeStringLength|1800000
 
