@@ -169,6 +169,8 @@
   # Security options:
   #
   DEFINE TPM_ENABLE                     = TRUE
+  DEFINE TPM2_ENABLE                    = TRUE
+  DEFINE TPM1_ENABLE                    = TRUE
 
 [BuildOptions]
   *_*_*_CC_FLAGS                 = -D DISABLE_NEW_DEPRECATED_INTERFACES
