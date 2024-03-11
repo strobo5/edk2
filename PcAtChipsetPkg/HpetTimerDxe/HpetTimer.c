@@ -302,7 +302,6 @@ TimerInterruptHandler (
   //
   DEBUG_CODE (
     mNumTicks++;
-    DEBUG ((DEBUG_INFO, "hello\n"));
     );
 
   //
@@ -608,6 +607,7 @@ TimerDriverSetTimerPeriod (
 
     HpetEnable (TRUE);
     HpetEnable (FALSE);
+    // Clear HPET timer interrupt status
     HpetWrite (HPET_GENERAL_INTERRUPT_STATUS_OFFSET, LShiftU64 (1, mTimerIndex));
     //
     // Enable HPET Interrupt Generation
@@ -974,6 +974,43 @@ TimerDriverInitialize (
     return EFI_DEVICE_ERROR;
   }
 
+  // repeat setup (kick the HPET again after setting upo the I/O APIC)
+  //
+  HpetEnable (FALSE);
+  HpetWrite (HPET_GENERAL_INTERRUPT_STATUS_OFFSET, LShiftU64 (1, mTimerIndex));
+  // use legacy replacement routing in hope that it doesn't fail to cause interrupts
+  mHpetGeneralConfiguration.Bits.LegacyRouteEnable = 1;
+  HpetWrite (HPET_GENERAL_CONFIGURATION_OFFSET, mHpetGeneralConfiguration.Uint64);
+
+  //
+  // Read the HPET Timer Capabilities and Configuration register and initialize for I/O APIC mode
+  //   Clear MsiInterruptCapability to force rest of driver to use I/O APIC mode
+  //   Set LevelTriggeredInterrupt to use level triggered interrupts when in I/O APIC mode
+  //   Set InterruptRoute field based in mTimerIrq
+  //
+  mTimerConfiguration.Uint64                       = HpetRead (HPET_TIMER_CONFIGURATION_OFFSET + mTimerIndex * HPET_TIMER_STRIDE);
+  // I/O APIC IRQs 0-15 expect active high edge triggered interrupts
+  mTimerConfiguration.Bits.LevelTriggeredInterrupt = 0;
+  mTimerConfiguration.Bits.InterruptRoute          = mTimerIrq;
+
+  // Configure the selected HPET Timer with settings common to both MSI mode and I/O APIC mode
+  //   Clear InterruptEnable to keep interrupts disabled until full init is complete
+  //   Clear PeriodicInterruptEnable to use one-shot mode
+  //   Configure as a 32-bit counter
+  //
+  mTimerConfiguration.Bits.InterruptEnable         = 0;
+  mTimerConfiguration.Bits.PeriodicInterruptEnable = 0;
+  mTimerConfiguration.Bits.CounterSizeEnable       = 1;
+  HpetWrite (HPET_TIMER_CONFIGURATION_OFFSET + mTimerIndex * HPET_TIMER_STRIDE, mTimerConfiguration.Uint64);
+  HpetEnable (TRUE);
+  //
+  // Enable HPET Interrupt Generation
+  //
+  mTimerConfiguration.Bits.InterruptEnable = 1;
+  HpetWrite (HPET_TIMER_CONFIGURATION_OFFSET + mTimerIndex * HPET_TIMER_STRIDE, mTimerConfiguration.Uint64);
+
+  //
+  //
   //
   // Show state of enabled HPET timer
   //
@@ -992,6 +1029,11 @@ TimerDriverInitialize (
   DEBUG ((DEBUG_INFO, "HPET_TIMER%d_CONFIGURATION = 0x%016lx\n", mTimerIndex, HpetRead (HPET_TIMER_CONFIGURATION_OFFSET + mTimerIndex * HPET_TIMER_STRIDE)));
   DEBUG ((DEBUG_INFO, "HPET_TIMER%d_COMPARATOR    = 0x%016lx\n", mTimerIndex, HpetRead (HPET_TIMER_COMPARATOR_OFFSET    + mTimerIndex * HPET_TIMER_STRIDE)));
   DEBUG ((DEBUG_INFO, "HPET_TIMER%d_MSI_ROUTE     = 0x%016lx\n", mTimerIndex, HpetRead (HPET_TIMER_MSI_ROUTE_OFFSET     + mTimerIndex * HPET_TIMER_STRIDE)));
+  DEBUG ((DEBUG_INFO, "  HPET_GENERAL_CAPABILITIES_ID  = 0x%016lx\n", mHpetGeneralCapabilities));
+  DEBUG ((DEBUG_INFO, "  HPET_GENERAL_CONFIGURATION    = 0x%016lx\n", mHpetGeneralConfiguration.Uint64));
+  DEBUG ((DEBUG_INFO, "  HPET_GENERAL_INTERRUPT_STATUS = 0x%016lx\n", HpetRead (HPET_GENERAL_INTERRUPT_STATUS_OFFSET)));
+  DEBUG ((DEBUG_INFO, "  HPET_MAIN_COUNTER             = 0x%016lx\n", HpetRead (HPET_MAIN_COUNTER_OFFSET)));
+  DEBUG ((DEBUG_INFO, "  HPET Main Counter Period      = %d (fs)\n", mHpetGeneralCapabilities.Bits.CounterClockPeriod));
 
   //
   // Wait for a few timer interrupts to fire before continuing
