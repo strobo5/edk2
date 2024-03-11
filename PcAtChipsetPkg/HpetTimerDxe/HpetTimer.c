@@ -302,6 +302,7 @@ TimerInterruptHandler (
   //
   DEBUG_CODE (
     mNumTicks++;
+    DEBUG ((DEBUG_INFO, "hello\n"));
     );
 
   //
@@ -599,8 +600,10 @@ TimerDriverSetTimerPeriod (
       // Enable timer interrupt through I/O APIC
       // Program IOAPIC register with APIC ID of current BSP in case BSP has been switched
       //
-      IoApicConfigureInterrupt (mTimerIrq, PcdGet8 (PcdHpetLocalApicVector), IO_APIC_DELIVERY_MODE_LOWEST_PRIORITY, TRUE, FALSE);
+      IoApicConfigureInterrupt (mTimerIrq, PcdGet8 (PcdHpetLocalApicVector), IO_APIC_DELIVERY_MODE_LOWEST_PRIORITY, FALSE, TRUE);
       IoApicEnableInterrupt (mTimerIrq, TRUE);
+      // use legacy replacement routing in hope that it doesn't fail to cause interrupts
+      mHpetGeneralConfiguration.Bits.LegacyRouteEnable = 1;
     }
 
     //
@@ -859,7 +862,8 @@ TimerDriverInitialize (
       //
       if (mTimerIndex == HPET_INVALID_TIMER_INDEX) {
         mTimerIndex = TimerIndex;
-        mTimerIrq   = (UINT32)LowBitSet32 (mTimerConfiguration.Bits.InterruptRouteCapability);
+        //mTimerIrq   = (UINT32)LowBitSet32 (mTimerConfiguration.Bits.InterruptRouteCapability);
+        mTimerIrq   = 2;
       }
     }
   }
@@ -897,7 +901,11 @@ TimerDriverInitialize (
     // Initialize I/O APIC entry for HPET Timer Interrupt
     //   Fixed Delivery Mode, Level Triggered, Asserted Low
     //
-    IoApicConfigureInterrupt (mTimerIrq, PcdGet8 (PcdHpetLocalApicVector), IO_APIC_DELIVERY_MODE_LOWEST_PRIORITY, TRUE, FALSE);
+    IoApicConfigureInterrupt (mTimerIrq, PcdGet8 (PcdHpetLocalApicVector), IO_APIC_DELIVERY_MODE_LOWEST_PRIORITY, FALSE, TRUE);
+
+    // use legacy replacement routing in hope that it doesn't fail to cause interrupts
+    mHpetGeneralConfiguration.Bits.LegacyRouteEnable = 1;
+    HpetWrite (HPET_GENERAL_CONFIGURATION_OFFSET, mHpetGeneralConfiguration.Uint64);
 
     //
     // Read the HPET Timer Capabilities and Configuration register and initialize for I/O APIC mode
@@ -906,7 +914,8 @@ TimerDriverInitialize (
     //   Set InterruptRoute field based in mTimerIrq
     //
     mTimerConfiguration.Uint64                       = HpetRead (HPET_TIMER_CONFIGURATION_OFFSET + mTimerIndex * HPET_TIMER_STRIDE);
-    mTimerConfiguration.Bits.LevelTriggeredInterrupt = 1;
+    // I/O APIC IRQs 0-15 expect active high edge triggered interrupts
+    mTimerConfiguration.Bits.LevelTriggeredInterrupt = 0;
     mTimerConfiguration.Bits.InterruptRoute          = mTimerIrq;
   }
 
@@ -985,6 +994,7 @@ TimerDriverInitialize (
   // Wait for a few timer interrupts to fire before continuing
   //
   while (mNumTicks < 10) {
+    DEBUG ((DEBUG_INFO, "mNumTicks = %d\n", mNumTicks));
   }
 
   DEBUG_CODE_END ();
