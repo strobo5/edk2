@@ -15,6 +15,7 @@
 ///
 #define IOAPIC_INDEX_OFFSET  0x00
 #define IOAPIC_DATA_OFFSET   0x10
+#define IOAPIC_EOI_OFFSET   0x40
 
 ///
 /// I/O APIC Indirect Register Indexes

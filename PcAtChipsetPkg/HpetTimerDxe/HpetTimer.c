@@ -307,7 +307,12 @@ TimerInterruptHandler (
   //
   // Local APIC EOI
   //
-  SendApicEoi2 (PcdGet8 (PcdHpetLocalApicVector));
+  SendApicEoi ();
+
+  //
+  // I/O APIC EOI
+  //
+  IoApicEoi ((UINT32) PcdGet8 (PcdHpetLocalApicVector));
 
   //
   // Disable HPET timer when adjusting the COMPARATOR value to prevent a missed interrupt

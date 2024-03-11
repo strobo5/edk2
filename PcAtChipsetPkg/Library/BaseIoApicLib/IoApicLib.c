@@ -62,6 +62,16 @@ IoApicWrite (
   return MmioWrite32 (PcdGet32 (PcdIoApicBaseAddress) + IOAPIC_DATA_OFFSET, Value);
 }
 
+UINT32
+EFIAPI
+IoApicEoi (
+  IN UINT32  Value
+  )
+{
+  ASSERT (Value < 0xFF);
+  return MmioWrite32 (PcdGet32 (PcdIoApicBaseAddress) + IOAPIC_EOI_OFFSET, Value);
+}
+
 /**
   Set the interrupt mask of an I/O APIC interrupt.
 

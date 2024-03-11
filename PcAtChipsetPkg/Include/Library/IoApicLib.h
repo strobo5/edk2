@@ -44,6 +44,12 @@ IoApicWrite (
   IN UINT32  Value
   );
 
+UINT32
+EFIAPI
+IoApicEoi (
+  IN UINT32  Value
+  );
+
 /**
   Set the interrupt mask of an I/O APIC interrupt.
 
