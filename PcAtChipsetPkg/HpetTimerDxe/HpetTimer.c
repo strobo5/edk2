@@ -305,19 +305,19 @@ TimerInterruptHandler (
     );
 
   //
-  // Clear HPET timer interrupt status
-  //
-  HpetWrite (HPET_GENERAL_INTERRUPT_STATUS_OFFSET, LShiftU64 (1, mTimerIndex));
-
-  //
   // Local APIC EOI
   //
-  SendApicEoi ();
+  SendApicEoi2 (PcdGet8 (PcdHpetLocalApicVector));
 
   //
   // Disable HPET timer when adjusting the COMPARATOR value to prevent a missed interrupt
   //
   HpetEnable (FALSE);
+
+  //
+  // Clear HPET timer interrupt status
+  //
+  HpetWrite (HPET_GENERAL_INTERRUPT_STATUS_OFFSET, LShiftU64 (1, mTimerIndex));
 
   //
   // Capture main counter value
@@ -981,6 +981,7 @@ TimerDriverInitialize (
   DEBUG ((DEBUG_INFO, "  HPET_GENERAL_INTERRUPT_STATUS = 0x%016lx\n", HpetRead (HPET_GENERAL_INTERRUPT_STATUS_OFFSET)));
   DEBUG ((DEBUG_INFO, "  HPET_MAIN_COUNTER             = 0x%016lx\n", HpetRead (HPET_MAIN_COUNTER_OFFSET)));
   DEBUG ((DEBUG_INFO, "  HPET Main Counter Period      = %d (fs)\n", mHpetGeneralCapabilities.Bits.CounterClockPeriod));
+  DEBUG ((DEBUG_INFO, "mNumTicks = %d\n", mNumTicks));
   DEBUG ((DEBUG_INFO, "clearing the interrupt status and main counter\n"));
   HpetWrite (HPET_GENERAL_INTERRUPT_STATUS_OFFSET, LShiftU64 (1, mTimerIndex));
   HpetWrite (HPET_MAIN_COUNTER_OFFSET, 0x0ULL);
@@ -1048,6 +1049,7 @@ TimerDriverInitialize (
     DEBUG ((DEBUG_INFO, "mNumTicks = %d\n", mNumTicks));
     DEBUG ((DEBUG_INFO, "  HPET_GENERAL_INTERRUPT_STATUS = 0x%016lx\n", HpetRead (HPET_GENERAL_INTERRUPT_STATUS_OFFSET)));
     DEBUG ((DEBUG_INFO, "  HPET_MAIN_COUNTER             = 0x%016lx\n", HpetRead (HPET_MAIN_COUNTER_OFFSET)));
+    DEBUG ((DEBUG_INFO, "  HPET_TIMER%d_COMPARATOR    = 0x%016lx\n", mTimerIndex, HpetRead (HPET_TIMER_COMPARATOR_OFFSET    + mTimerIndex * HPET_TIMER_STRIDE)));
   }
 
   DEBUG_CODE_END ();
