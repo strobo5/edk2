@@ -146,7 +146,8 @@ IoApicConfigureInterrupt (
   Entry.Bits.Mask            = 1;
   IoApicWrite (IO_APIC_REDIRECTION_TABLE_ENTRY_INDEX + Irq * 2, Entry.Uint32.Low);
 
-  Entry.Uint32.High        = IoApicRead (IO_APIC_REDIRECTION_TABLE_ENTRY_INDEX + Irq * 2 + 1);
+  //Entry.Uint32.High        = IoApicRead (IO_APIC_REDIRECTION_TABLE_ENTRY_INDEX + Irq * 2 + 1);
+  Entry.Uint32.High        = 0; // see REDIR_TBL : "In this case, bits 63:59 should be programmed by software to 0"
   Entry.Bits.DestinationID = GetApicId ();
   IoApicWrite (IO_APIC_REDIRECTION_TABLE_ENTRY_INDEX + Irq * 2 + 1, Entry.Uint32.High);
 }
