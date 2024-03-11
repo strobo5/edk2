@@ -599,7 +599,7 @@ TimerDriverSetTimerPeriod (
       // Enable timer interrupt through I/O APIC
       // Program IOAPIC register with APIC ID of current BSP in case BSP has been switched
       //
-      IoApicConfigureInterrupt (mTimerIrq, PcdGet8 (PcdHpetLocalApicVector), IO_APIC_DELIVERY_MODE_LOWEST_PRIORITY, FALSE, TRUE);
+      IoApicConfigureInterrupt (mTimerIrq, PcdGet8 (PcdHpetLocalApicVector), IO_APIC_DELIVERY_MODE_LOWEST_PRIORITY, TRUE, TRUE);
       IoApicEnableInterrupt (mTimerIrq, TRUE);
       // use legacy replacement routing in hope that it doesn't fail to cause interrupts
       mHpetGeneralConfiguration.Bits.LegacyRouteEnable = 1;
@@ -904,7 +904,7 @@ TimerDriverInitialize (
     // Initialize I/O APIC entry for HPET Timer Interrupt
     //   Fixed Delivery Mode, Level Triggered, Asserted Low
     //
-    IoApicConfigureInterrupt (mTimerIrq, PcdGet8 (PcdHpetLocalApicVector), IO_APIC_DELIVERY_MODE_LOWEST_PRIORITY, FALSE, TRUE);
+    IoApicConfigureInterrupt (mTimerIrq, PcdGet8 (PcdHpetLocalApicVector), IO_APIC_DELIVERY_MODE_LOWEST_PRIORITY, TRUE, TRUE);
 
     // use legacy replacement routing in hope that it doesn't fail to cause interrupts
     mHpetGeneralConfiguration.Bits.LegacyRouteEnable = 1;
@@ -917,8 +917,8 @@ TimerDriverInitialize (
     //   Set InterruptRoute field based in mTimerIrq
     //
     mTimerConfiguration.Uint64                       = HpetRead (HPET_TIMER_CONFIGURATION_OFFSET + mTimerIndex * HPET_TIMER_STRIDE);
-    // I/O APIC IRQs 0-15 expect active high edge triggered interrupts
-    mTimerConfiguration.Bits.LevelTriggeredInterrupt = 0;
+    // I/O APIC IRQs 0-15 expect active high (edge triggered?) interrupts
+    mTimerConfiguration.Bits.LevelTriggeredInterrupt = 1;
     mTimerConfiguration.Bits.InterruptRoute          = mTimerIrq;
   }
 
@@ -989,8 +989,8 @@ TimerDriverInitialize (
   //   Set InterruptRoute field based in mTimerIrq
   //
   mTimerConfiguration.Uint64                       = HpetRead (HPET_TIMER_CONFIGURATION_OFFSET + mTimerIndex * HPET_TIMER_STRIDE);
-  // I/O APIC IRQs 0-15 expect active high edge triggered interrupts
-  mTimerConfiguration.Bits.LevelTriggeredInterrupt = 0;
+  // I/O APIC IRQs 0-15 expect active high (edge triggered?) interrupts
+  mTimerConfiguration.Bits.LevelTriggeredInterrupt = 1;
   mTimerConfiguration.Bits.InterruptRoute          = mTimerIrq;
 
   // Configure the selected HPET Timer with settings common to both MSI mode and I/O APIC mode
@@ -1040,6 +1040,8 @@ TimerDriverInitialize (
   //
   while (mNumTicks < 10) {
     DEBUG ((DEBUG_INFO, "mNumTicks = %d\n", mNumTicks));
+    DEBUG ((DEBUG_INFO, "  HPET_GENERAL_INTERRUPT_STATUS = 0x%016lx\n", HpetRead (HPET_GENERAL_INTERRUPT_STATUS_OFFSET)));
+    DEBUG ((DEBUG_INFO, "  HPET_MAIN_COUNTER             = 0x%016lx\n", HpetRead (HPET_MAIN_COUNTER_OFFSET)));
   }
 
   DEBUG_CODE_END ();
