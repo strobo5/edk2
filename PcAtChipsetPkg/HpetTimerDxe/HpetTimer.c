@@ -606,6 +606,9 @@ TimerDriverSetTimerPeriod (
       mHpetGeneralConfiguration.Bits.LegacyRouteEnable = 1;
     }
 
+    HpetEnable (TRUE);
+    HpetEnable (FALSE);
+    HpetWrite (HPET_GENERAL_INTERRUPT_STATUS_OFFSET, LShiftU64 (1, mTimerIndex));
     //
     // Enable HPET Interrupt Generation
     //
