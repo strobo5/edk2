@@ -977,7 +977,13 @@ TimerDriverInitialize (
   // repeat setup (kick the HPET again after setting upo the I/O APIC)
   //
   HpetEnable (FALSE);
+  DEBUG ((DEBUG_INFO, "kicking HPET; now disabled\n"));
+  DEBUG ((DEBUG_INFO, "  HPET_GENERAL_INTERRUPT_STATUS = 0x%016lx\n", HpetRead (HPET_GENERAL_INTERRUPT_STATUS_OFFSET)));
+  DEBUG ((DEBUG_INFO, "  HPET_MAIN_COUNTER             = 0x%016lx\n", HpetRead (HPET_MAIN_COUNTER_OFFSET)));
+  DEBUG ((DEBUG_INFO, "  HPET Main Counter Period      = %d (fs)\n", mHpetGeneralCapabilities.Bits.CounterClockPeriod));
+  DEBUG ((DEBUG_INFO, "clearing the interrupt status and main counter\n"));
   HpetWrite (HPET_GENERAL_INTERRUPT_STATUS_OFFSET, LShiftU64 (1, mTimerIndex));
+  HpetWrite (HPET_MAIN_COUNTER_OFFSET, 0x0ULL);
   // use legacy replacement routing in hope that it doesn't fail to cause interrupts
   mHpetGeneralConfiguration.Bits.LegacyRouteEnable = 1;
   HpetWrite (HPET_GENERAL_CONFIGURATION_OFFSET, mHpetGeneralConfiguration.Uint64);
@@ -1002,12 +1008,12 @@ TimerDriverInitialize (
   mTimerConfiguration.Bits.PeriodicInterruptEnable = 0;
   mTimerConfiguration.Bits.CounterSizeEnable       = 1;
   HpetWrite (HPET_TIMER_CONFIGURATION_OFFSET + mTimerIndex * HPET_TIMER_STRIDE, mTimerConfiguration.Uint64);
-  HpetEnable (TRUE);
   //
   // Enable HPET Interrupt Generation
   //
   mTimerConfiguration.Bits.InterruptEnable = 1;
   HpetWrite (HPET_TIMER_CONFIGURATION_OFFSET + mTimerIndex * HPET_TIMER_STRIDE, mTimerConfiguration.Uint64);
+  HpetEnable (TRUE);
 
   //
   //
