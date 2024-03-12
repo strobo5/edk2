@@ -604,10 +604,8 @@ TimerDriverSetTimerPeriod (
       // Enable timer interrupt through I/O APIC
       // Program IOAPIC register with APIC ID of current BSP in case BSP has been switched
       //
-      IoApicConfigureInterrupt (mTimerIrq, PcdGet8 (PcdHpetLocalApicVector), IO_APIC_DELIVERY_MODE_LOWEST_PRIORITY, TRUE, TRUE);
+      IoApicConfigureInterrupt (mTimerIrq, PcdGet8 (PcdHpetLocalApicVector), IO_APIC_DELIVERY_MODE_LOWEST_PRIORITY, TRUE, FALSE);
       IoApicEnableInterrupt (mTimerIrq, TRUE);
-      // use legacy replacement routing in hope that it doesn't fail to cause interrupts
-      mHpetGeneralConfiguration.Bits.LegacyRouteEnable = 1;
     }
 
     HpetEnable (TRUE);
@@ -870,8 +868,7 @@ TimerDriverInitialize (
       //
       if (mTimerIndex == HPET_INVALID_TIMER_INDEX) {
         mTimerIndex = TimerIndex;
-        //mTimerIrq   = (UINT32)LowBitSet32 (mTimerConfiguration.Bits.InterruptRouteCapability);
-        mTimerIrq   = 2;
+        mTimerIrq   = (UINT32)LowBitSet32 (mTimerConfiguration.Bits.InterruptRouteCapability);
       }
     }
   }
@@ -909,11 +906,7 @@ TimerDriverInitialize (
     // Initialize I/O APIC entry for HPET Timer Interrupt
     //   Fixed Delivery Mode, Level Triggered, Asserted Low
     //
-    IoApicConfigureInterrupt (mTimerIrq, PcdGet8 (PcdHpetLocalApicVector), IO_APIC_DELIVERY_MODE_LOWEST_PRIORITY, TRUE, TRUE);
-
-    // use legacy replacement routing in hope that it doesn't fail to cause interrupts
-    mHpetGeneralConfiguration.Bits.LegacyRouteEnable = 1;
-    HpetWrite (HPET_GENERAL_CONFIGURATION_OFFSET, mHpetGeneralConfiguration.Uint64);
+    IoApicConfigureInterrupt (mTimerIrq, PcdGet8 (PcdHpetLocalApicVector), IO_APIC_DELIVERY_MODE_LOWEST_PRIORITY, TRUE, FALSE);
 
     //
     // Read the HPET Timer Capabilities and Configuration register and initialize for I/O APIC mode
@@ -922,7 +915,6 @@ TimerDriverInitialize (
     //   Set InterruptRoute field based in mTimerIrq
     //
     mTimerConfiguration.Uint64                       = HpetRead (HPET_TIMER_CONFIGURATION_OFFSET + mTimerIndex * HPET_TIMER_STRIDE);
-    // I/O APIC IRQs 0-15 expect active high (edge triggered?) interrupts
     mTimerConfiguration.Bits.LevelTriggeredInterrupt = 1;
     mTimerConfiguration.Bits.InterruptRoute          = mTimerIrq;
   }
@@ -990,8 +982,6 @@ TimerDriverInitialize (
   DEBUG ((DEBUG_INFO, "clearing the interrupt status and main counter\n"));
   HpetWrite (HPET_GENERAL_INTERRUPT_STATUS_OFFSET, LShiftU64 (1, mTimerIndex));
   HpetWrite (HPET_MAIN_COUNTER_OFFSET, 0x0ULL);
-  // use legacy replacement routing in hope that it doesn't fail to cause interrupts
-  mHpetGeneralConfiguration.Bits.LegacyRouteEnable = 1;
   HpetWrite (HPET_GENERAL_CONFIGURATION_OFFSET, mHpetGeneralConfiguration.Uint64);
 
   //
@@ -1014,12 +1004,13 @@ TimerDriverInitialize (
   mTimerConfiguration.Bits.PeriodicInterruptEnable = 0;
   mTimerConfiguration.Bits.CounterSizeEnable       = 1;
   HpetWrite (HPET_TIMER_CONFIGURATION_OFFSET + mTimerIndex * HPET_TIMER_STRIDE, mTimerConfiguration.Uint64);
+  // enable HPET in general
+  HpetEnable (TRUE);
   //
   // Enable HPET Interrupt Generation
   //
   mTimerConfiguration.Bits.InterruptEnable = 1;
   HpetWrite (HPET_TIMER_CONFIGURATION_OFFSET + mTimerIndex * HPET_TIMER_STRIDE, mTimerConfiguration.Uint64);
-  HpetEnable (TRUE);
 
   //
   //
