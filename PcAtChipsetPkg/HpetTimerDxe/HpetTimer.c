@@ -305,24 +305,19 @@ TimerInterruptHandler (
     );
 
   //
+  // Clear HPET timer interrupt status
+  //
+  HpetWrite (HPET_GENERAL_INTERRUPT_STATUS_OFFSET, LShiftU64 (1, mTimerIndex));
+
+  //
   // Local APIC EOI
   //
   SendApicEoi ();
 
   //
-  // I/O APIC EOI
-  //
-  IoApicEoi ((UINT32) PcdGet8 (PcdHpetLocalApicVector));
-
-  //
   // Disable HPET timer when adjusting the COMPARATOR value to prevent a missed interrupt
   //
   HpetEnable (FALSE);
-
-  //
-  // Clear HPET timer interrupt status
-  //
-  HpetWrite (HPET_GENERAL_INTERRUPT_STATUS_OFFSET, LShiftU64 (1, mTimerIndex));
 
   //
   // Capture main counter value
@@ -359,6 +354,11 @@ TimerInterruptHandler (
       HpetWrite (HPET_TIMER_COMPARATOR_OFFSET + mTimerIndex * HPET_TIMER_STRIDE, (MainCounter + mTimerCount) & mCounterMask);
     }
   }
+
+  //
+  // I/O APIC EOI
+  //
+  IoApicEoi ((UINT32) PcdGet8 (PcdHpetLocalApicVector));
 
   //
   // Enable the HPET counter once the new COMPARATOR value has been set.
@@ -608,8 +608,20 @@ TimerDriverSetTimerPeriod (
       IoApicEnableInterrupt (mTimerIrq, TRUE);
     }
 
+    DEBUG ((DEBUG_INFO, "mNumTicks = %d (before toggling enable)\n", mNumTicks));
+    DEBUG ((DEBUG_INFO, "  HPET_GENERAL_INTERRUPT_STATUS = 0x%016lx\n", HpetRead (HPET_GENERAL_INTERRUPT_STATUS_OFFSET)));
+    DEBUG ((DEBUG_INFO, "  HPET_MAIN_COUNTER             = 0x%016lx\n", HpetRead (HPET_MAIN_COUNTER_OFFSET)));
+    DEBUG ((DEBUG_INFO, "  HPET_TIMER%d_COMPARATOR    = 0x%016lx\n", mTimerIndex, HpetRead (HPET_TIMER_COMPARATOR_OFFSET    + mTimerIndex * HPET_TIMER_STRIDE)));
+    DEBUG ((DEBUG_INFO, "  REDIR_TBL_HI = 0x%08x\n", IoApicGetRedirHigh(mTimerIrq)));
+    DEBUG ((DEBUG_INFO, "  REDIR_TBL_LO = 0x%08x\n", IoApicGetRedirLow(mTimerIrq)));
     HpetEnable (TRUE);
     HpetEnable (FALSE);
+    DEBUG ((DEBUG_INFO, "mNumTicks = %d (after toggling enable)\n", mNumTicks));
+    DEBUG ((DEBUG_INFO, "  HPET_GENERAL_INTERRUPT_STATUS = 0x%016lx\n", HpetRead (HPET_GENERAL_INTERRUPT_STATUS_OFFSET)));
+    DEBUG ((DEBUG_INFO, "  HPET_MAIN_COUNTER             = 0x%016lx\n", HpetRead (HPET_MAIN_COUNTER_OFFSET)));
+    DEBUG ((DEBUG_INFO, "  HPET_TIMER%d_COMPARATOR    = 0x%016lx\n", mTimerIndex, HpetRead (HPET_TIMER_COMPARATOR_OFFSET    + mTimerIndex * HPET_TIMER_STRIDE)));
+    DEBUG ((DEBUG_INFO, "  REDIR_TBL_HI = 0x%08x\n", IoApicGetRedirHigh(mTimerIrq)));
+    DEBUG ((DEBUG_INFO, "  REDIR_TBL_LO = 0x%08x\n", IoApicGetRedirLow(mTimerIrq)));
     // Clear HPET timer interrupt status
     HpetWrite (HPET_GENERAL_INTERRUPT_STATUS_OFFSET, LShiftU64 (1, mTimerIndex));
     //
@@ -975,10 +987,12 @@ TimerDriverInitialize (
   //
   HpetEnable (FALSE);
   DEBUG ((DEBUG_INFO, "kicking HPET; now disabled\n"));
+  DEBUG ((DEBUG_INFO, "mNumTicks = %d\n", mNumTicks));
   DEBUG ((DEBUG_INFO, "  HPET_GENERAL_INTERRUPT_STATUS = 0x%016lx\n", HpetRead (HPET_GENERAL_INTERRUPT_STATUS_OFFSET)));
   DEBUG ((DEBUG_INFO, "  HPET_MAIN_COUNTER             = 0x%016lx\n", HpetRead (HPET_MAIN_COUNTER_OFFSET)));
-  DEBUG ((DEBUG_INFO, "  HPET Main Counter Period      = %d (fs)\n", mHpetGeneralCapabilities.Bits.CounterClockPeriod));
-  DEBUG ((DEBUG_INFO, "mNumTicks = %d\n", mNumTicks));
+  DEBUG ((DEBUG_INFO, "  HPET_TIMER%d_COMPARATOR    = 0x%016lx\n", mTimerIndex, HpetRead (HPET_TIMER_COMPARATOR_OFFSET    + mTimerIndex * HPET_TIMER_STRIDE)));
+  DEBUG ((DEBUG_INFO, "  REDIR_TBL_HI = 0x%08x\n", IoApicGetRedirHigh(mTimerIrq)));
+  DEBUG ((DEBUG_INFO, "  REDIR_TBL_LO = 0x%08x\n", IoApicGetRedirLow(mTimerIrq)));
   DEBUG ((DEBUG_INFO, "clearing the interrupt status and main counter\n"));
   HpetWrite (HPET_GENERAL_INTERRUPT_STATUS_OFFSET, LShiftU64 (1, mTimerIndex));
   HpetWrite (HPET_MAIN_COUNTER_OFFSET, 0x0ULL);
@@ -996,21 +1010,16 @@ TimerDriverInitialize (
   mTimerConfiguration.Bits.InterruptRoute          = mTimerIrq;
 
   // Configure the selected HPET Timer with settings common to both MSI mode and I/O APIC mode
-  //   Clear InterruptEnable to keep interrupts disabled until full init is complete
+  //   (Clear InterruptEnable to keep interrupts disabled until full init is complete)
   //   Clear PeriodicInterruptEnable to use one-shot mode
   //   Configure as a 32-bit counter
   //
-  mTimerConfiguration.Bits.InterruptEnable         = 0;
+  mTimerConfiguration.Bits.InterruptEnable         = 1;
   mTimerConfiguration.Bits.PeriodicInterruptEnable = 0;
   mTimerConfiguration.Bits.CounterSizeEnable       = 1;
   HpetWrite (HPET_TIMER_CONFIGURATION_OFFSET + mTimerIndex * HPET_TIMER_STRIDE, mTimerConfiguration.Uint64);
   // enable HPET in general
   HpetEnable (TRUE);
-  //
-  // Enable HPET Interrupt Generation
-  //
-  mTimerConfiguration.Bits.InterruptEnable = 1;
-  HpetWrite (HPET_TIMER_CONFIGURATION_OFFSET + mTimerIndex * HPET_TIMER_STRIDE, mTimerConfiguration.Uint64);
 
   //
   //
@@ -1046,6 +1055,8 @@ TimerDriverInitialize (
     DEBUG ((DEBUG_INFO, "  HPET_GENERAL_INTERRUPT_STATUS = 0x%016lx\n", HpetRead (HPET_GENERAL_INTERRUPT_STATUS_OFFSET)));
     DEBUG ((DEBUG_INFO, "  HPET_MAIN_COUNTER             = 0x%016lx\n", HpetRead (HPET_MAIN_COUNTER_OFFSET)));
     DEBUG ((DEBUG_INFO, "  HPET_TIMER%d_COMPARATOR    = 0x%016lx\n", mTimerIndex, HpetRead (HPET_TIMER_COMPARATOR_OFFSET    + mTimerIndex * HPET_TIMER_STRIDE)));
+    DEBUG ((DEBUG_INFO, "  REDIR_TBL_HI = 0x%08x\n", IoApicGetRedirHigh(mTimerIrq)));
+    DEBUG ((DEBUG_INFO, "  REDIR_TBL_LO = 0x%08x\n", IoApicGetRedirLow(mTimerIrq)));
   }
 
   DEBUG_CODE_END ();

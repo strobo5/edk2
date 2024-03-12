@@ -72,6 +72,30 @@ IoApicEoi (
   return MmioWrite32 (PcdGet32 (PcdIoApicBaseAddress) + IOAPIC_EOI_OFFSET, Value);
 }
 
+UINT32
+EFIAPI
+IoApicGetRedirHigh (
+  IN UINTN  Irq
+  )
+{
+  IO_APIC_REDIRECTION_TABLE_ENTRY  Entry;
+  ASSERT (Irq < 24);
+  Entry.Uint32.High = IoApicRead (IO_APIC_REDIRECTION_TABLE_ENTRY_INDEX + Irq * 2 + 1);
+  return Entry.Uint32.High;
+}
+
+UINT32
+EFIAPI
+IoApicGetRedirLow (
+  IN UINTN  Irq
+  )
+{
+  IO_APIC_REDIRECTION_TABLE_ENTRY  Entry;
+  ASSERT (Irq < 24);
+  Entry.Uint32.Low = IoApicRead (IO_APIC_REDIRECTION_TABLE_ENTRY_INDEX + Irq * 2);
+  return Entry.Uint32.Low;
+}
+
 /**
   Set the interrupt mask of an I/O APIC interrupt.
 
@@ -156,8 +180,8 @@ IoApicConfigureInterrupt (
   Entry.Bits.Mask            = 1;
   IoApicWrite (IO_APIC_REDIRECTION_TABLE_ENTRY_INDEX + Irq * 2, Entry.Uint32.Low);
 
-  //Entry.Uint32.High        = IoApicRead (IO_APIC_REDIRECTION_TABLE_ENTRY_INDEX + Irq * 2 + 1);
-  Entry.Uint32.High        = 0; // see REDIR_TBL : "In this case, bits 63:59 should be programmed by software to 0"
+  // see REDIR_TBL : "In this case, bits 63:59 should be programmed by software to 0"
+  Entry.Uint32.High        = IoApicRead (IO_APIC_REDIRECTION_TABLE_ENTRY_INDEX + Irq * 2 + 1) & ~(0xF8);
   Entry.Bits.DestinationID = GetApicId ();
   IoApicWrite (IO_APIC_REDIRECTION_TABLE_ENTRY_INDEX + Irq * 2 + 1, Entry.Uint32.High);
 }

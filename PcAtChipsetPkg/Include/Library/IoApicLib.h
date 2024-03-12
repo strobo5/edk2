@@ -50,6 +50,18 @@ IoApicEoi (
   IN UINT32  Value
   );
 
+UINT32
+EFIAPI
+IoApicGetRedirHigh (
+  IN UINTN  Irq
+  );
+
+UINT32
+EFIAPI
+IoApicGetRedirLow (
+  IN UINTN  Irq
+  );
+
 /**
   Set the interrupt mask of an I/O APIC interrupt.
 
