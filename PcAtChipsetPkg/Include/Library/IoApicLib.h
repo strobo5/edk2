@@ -62,6 +62,12 @@ IoApicGetRedirLow (
   IN UINTN  Irq
   );
 
+UINT32
+EFIAPI
+IoApicGetDeliveryAndIrr (
+  IN UINTN  Irq
+  );
+
 /**
   Set the interrupt mask of an I/O APIC interrupt.
 

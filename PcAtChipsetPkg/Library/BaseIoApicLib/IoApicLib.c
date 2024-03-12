@@ -86,6 +86,18 @@ IoApicGetRedirHigh (
 
 UINT32
 EFIAPI
+IoApicGetDeliveryAndIrr (
+  IN UINTN  Irq
+  )
+{
+  IO_APIC_REDIRECTION_TABLE_ENTRY  Entry;
+  ASSERT (Irq < 24);
+  Entry.Uint32.Low = IoApicRead (IO_APIC_REDIRECTION_TABLE_ENTRY_INDEX + Irq * 2);
+  return Entry.Uint32.Low & 0x5000;
+}
+
+UINT32
+EFIAPI
 IoApicGetRedirLow (
   IN UINTN  Irq
   )
