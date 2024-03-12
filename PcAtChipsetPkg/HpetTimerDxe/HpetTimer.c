@@ -619,6 +619,7 @@ TimerDriverSetTimerPeriod (
     DEBUG ((DEBUG_INFO, "  HPET_TIMER%d_COMPARATOR    = 0x%016lx\n", mTimerIndex, HpetRead (HPET_TIMER_COMPARATOR_OFFSET    + mTimerIndex * HPET_TIMER_STRIDE)));
     DEBUG ((DEBUG_INFO, "  REDIR_TBL_HI = 0x%08x\n", IoApicGetRedirHigh(mTimerIrq)));
     DEBUG ((DEBUG_INFO, "  REDIR_TBL_LO = 0x%08x\n", IoApicGetRedirLow(mTimerIrq)));
+#if 0
     HpetEnable (TRUE);
     HpetEnable (FALSE);
     DEBUG ((DEBUG_INFO, "mNumTicks = 0x%08x (after toggling enable)\n", mNumTicks));
@@ -629,6 +630,9 @@ TimerDriverSetTimerPeriod (
     DEBUG ((DEBUG_INFO, "  REDIR_TBL_LO = 0x%08x\n", IoApicGetRedirLow(mTimerIrq)));
     // Clear HPET timer interrupt status
     HpetWrite (HPET_GENERAL_INTERRUPT_STATUS_OFFSET, LShiftU64 (1, mTimerIndex));
+    HpetWrite (HPET_MAIN_COUNTER_OFFSET, 0x0ULL);
+    HpetWrite (HPET_GENERAL_CONFIGURATION_OFFSET, mHpetGeneralConfiguration.Uint64);
+#endif // if 0
     //
     // Enable HPET Interrupt Generation
     //
@@ -988,6 +992,7 @@ TimerDriverInitialize (
     return EFI_DEVICE_ERROR;
   }
 
+#if 0
   // repeat setup (kick the HPET again after setting upo the I/O APIC)
   //
   HpetEnable (FALSE);
@@ -1027,12 +1032,15 @@ TimerDriverInitialize (
   // enable HPET in general
   HpetEnable (TRUE);
   DEBUG ((DEBUG_INFO, "HPET reenabled\n"));
+#else
+  DEBUG ((DEBUG_INFO, "HPET enabled, period and interrupt set up\n"));
   DEBUG ((DEBUG_INFO, "mNumTicks = 0x%08x\n", mNumTicks));
   DEBUG ((DEBUG_INFO, "  HPET_GENERAL_INTERRUPT_STATUS = 0x%016lx\n", HpetRead (HPET_GENERAL_INTERRUPT_STATUS_OFFSET)));
   DEBUG ((DEBUG_INFO, "  HPET_MAIN_COUNTER             = 0x%016lx\n", HpetRead (HPET_MAIN_COUNTER_OFFSET)));
   DEBUG ((DEBUG_INFO, "  HPET_TIMER%d_COMPARATOR    = 0x%016lx\n", mTimerIndex, HpetRead (HPET_TIMER_COMPARATOR_OFFSET    + mTimerIndex * HPET_TIMER_STRIDE)));
   DEBUG ((DEBUG_INFO, "  REDIR_TBL_HI = 0x%08x\n", IoApicGetRedirHigh(mTimerIrq)));
   DEBUG ((DEBUG_INFO, "  REDIR_TBL_LO = 0x%08x\n", IoApicGetRedirLow(mTimerIrq)));
+#endif // if 0
 
   //
   //
