@@ -795,6 +795,7 @@ TimerDriverInitialize (
 {
   EFI_STATUS                     Status;
   UINTN                          TimerIndex;
+  UINTN                          IrqIndex;
   UINTN                          MsiTimerIndex;
   HPET_TIMER_MSI_ROUTE_REGISTER  HpetTimerMsiRoute;
 
@@ -1072,6 +1073,14 @@ TimerDriverInitialize (
   DEBUG ((DEBUG_INFO, "  HPET_GENERAL_INTERRUPT_STATUS = 0x%016lx\n", HpetRead (HPET_GENERAL_INTERRUPT_STATUS_OFFSET)));
   DEBUG ((DEBUG_INFO, "  HPET_MAIN_COUNTER             = 0x%016lx\n", HpetRead (HPET_MAIN_COUNTER_OFFSET)));
   DEBUG ((DEBUG_INFO, "  HPET_TIMER%d_COMPARATOR    = 0x%016lx\n", mTimerIndex, HpetRead (HPET_TIMER_COMPARATOR_OFFSET    + mTimerIndex * HPET_TIMER_STRIDE)));
+  DEBUG ((DEBUG_INFO, "  REDIR_TBL_HI = 0x%08x\n", IoApicGetRedirHigh(mTimerIrq)));
+  DEBUG ((DEBUG_INFO, "  REDIR_TBL_LO = 0x%08x\n", IoApicGetRedirLow(mTimerIrq)));
+
+  DEBUG ((DEBUG_INFO, "Dumping REDIR_TBLs\n"));
+  for (IrqIndex = 0; IrqIndex<24; IrqIndex++) {
+    DEBUG ((DEBUG_INFO, "I/O APIC IRQ %u REDIR_TBL_HI = 0x%08x\n", IrqIndex, IoApicGetRedirHigh(IrqIndex)));
+    DEBUG ((DEBUG_INFO, "I/O APIC IRQ %u REDIR_TBL_LO = 0x%08x\n", IrqIndex, IoApicGetRedirLow(IrqIndex)));
+  }
   DEBUG ((DEBUG_INFO, "  REDIR_TBL_HI = 0x%08x\n", IoApicGetRedirHigh(mTimerIrq)));
   DEBUG ((DEBUG_INFO, "  REDIR_TBL_LO = 0x%08x\n", IoApicGetRedirLow(mTimerIrq)));
 
