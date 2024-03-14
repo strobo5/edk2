@@ -371,12 +371,6 @@ SendApicEoi (
   VOID
   );
 
-VOID
-EFIAPI
-SendApicEoi2 (
-  IN UINT32  Value
-  );
-
 /**
   Get the 32-bit address that a device should use to send a Message Signaled
   Interrupt (MSI) to the Local APIC of the currently executing processor.
