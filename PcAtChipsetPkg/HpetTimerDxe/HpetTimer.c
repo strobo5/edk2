@@ -358,7 +358,8 @@ TimerInterruptHandler (
   //
   SendApicEoi ();
   //
-  // I/O APIC EOI
+  // I/O APIC EOI: only required when the "Suppress EOI Broadcasts" bit is set
+  // in the Local APIC Spurious-Interrupt Vector Register
   //
   //IoApicEoi ((UINT32) PcdGet8 (PcdHpetLocalApicVector));
 
@@ -617,7 +618,7 @@ TimerDriverSetTimerPeriod (
       // Enable timer interrupt through I/O APIC
       // Program IOAPIC register with APIC ID of current BSP in case BSP has been switched
       //
-      IoApicConfigureInterrupt (mTimerIrq, PcdGet8 (PcdHpetLocalApicVector), IO_APIC_DELIVERY_MODE_LOWEST_PRIORITY, TRUE, FALSE);
+      IoApicConfigureInterrupt (mTimerIrq, PcdGet8 (PcdHpetLocalApicVector), IO_APIC_DELIVERY_MODE_LOWEST_PRIORITY, FALSE, TRUE);
       IoApicEnableInterrupt (mTimerIrq, TRUE);
     }
 
@@ -898,7 +899,8 @@ TimerDriverInitialize (
       //
       if (mTimerIndex == HPET_INVALID_TIMER_INDEX) {
         mTimerIndex = TimerIndex;
-        mTimerIrq   = (UINT32)LowBitSet32 (mTimerConfiguration.Bits.InterruptRouteCapability);
+        //mTimerIrq   = (UINT32)LowBitSet32 (mTimerConfiguration.Bits.InterruptRouteCapability);
+        mTimerIrq   = 2;
       }
     }
   }
@@ -936,7 +938,10 @@ TimerDriverInitialize (
     // Initialize I/O APIC entry for HPET Timer Interrupt
     //   Fixed Delivery Mode, Level Triggered, Asserted Low
     //
-    IoApicConfigureInterrupt (mTimerIrq, PcdGet8 (PcdHpetLocalApicVector), IO_APIC_DELIVERY_MODE_LOWEST_PRIORITY, TRUE, FALSE);
+    IoApicConfigureInterrupt (mTimerIrq, PcdGet8 (PcdHpetLocalApicVector), IO_APIC_DELIVERY_MODE_LOWEST_PRIORITY, FALSE, TRUE);
+
+    // use legacy replacement routing -> IRQ 2 on the I/O APIC, edge triggered, active high
+    mHpetGeneralConfiguration.Bits.LegacyRouteEnable = 1;
 
     //
     // Read the HPET Timer Capabilities and Configuration register and initialize for I/O APIC mode
@@ -945,7 +950,7 @@ TimerDriverInitialize (
     //   Set InterruptRoute field based in mTimerIrq
     //
     mTimerConfiguration.Uint64                       = HpetRead (HPET_TIMER_CONFIGURATION_OFFSET + mTimerIndex * HPET_TIMER_STRIDE);
-    mTimerConfiguration.Bits.LevelTriggeredInterrupt = 1;
+    mTimerConfiguration.Bits.LevelTriggeredInterrupt = 0;
     mTimerConfiguration.Bits.InterruptRoute          = mTimerIrq;
   }
 
