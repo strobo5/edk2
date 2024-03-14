@@ -365,6 +365,9 @@ TimerInterruptHandler (
   // read current IRR bit, increase by 1000 if set
   mNumTicks += (IoApicGetDeliveryAndIrr(mTimerIrq) << 4);
 
+  // mask the IRQ
+  IoApicEnableInterrupt (mTimerIrq, FALSE);
+
   //
   // Enable the HPET counter once the new COMPARATOR value has been set.
   //
@@ -408,6 +411,11 @@ TimerInterruptHandler (
   // Save main counter value
   //
   mPreviousMainCounter = MainCounter;
+
+  // unmask the IRQ
+  IoApicEnableInterrupt (mTimerIrq, TRUE);
+
+  return;
 }
 
 /**
