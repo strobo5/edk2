@@ -585,7 +585,7 @@
   gEfiMdeModulePkgTokenSpaceGuid.PcdSdMmcGenericTimeoutValue|$(SD_MMC_TIMEOUT)
 
   gEfiMdeModulePkgTokenSpaceGuid.PcdSdMmcGenericTimeoutValue|$(SD_MMC_TIMEOUT)
-  gEfiMdeModulePkgTokenSpaceGuid.PcdPrioritizeInternal|$(PRIORITISE_INTERNAL)
+  gEfiMdeModulePkgTokenSpaceGuid.PcdPrioritizeInternal|$(PRIORITIZE_INTERNAL)
 
   gUefiPayloadPkgTokenSpaceGuid.PcdBootManagerEscape|$(BOOT_MANAGER_ESCAPE)
 
